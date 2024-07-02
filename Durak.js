@@ -15,6 +15,7 @@ let table = [
   ["", "", "", "", "", "", ""],
   ["", "", "", "", "", "", ""],
 ];
+let is_player_turn = true;
 
 // define the sprites in our game
 const clubs_6 = "a";
@@ -75,8 +76,6 @@ const play_text_pl = "W";
 const play_text_ay = "X";
 
 const player = "Y";
-
-[ player, bitmap``],
 
 setLegend(
   [ clubs_6, bitmap`
@@ -965,9 +964,9 @@ const levels = [
   map`
 ......T
 .......
-......K
-.......
-......T`,
+.....IK
+Y......
+stuvwMT`,
 ];
 setMap(levels[level]);
 
@@ -977,14 +976,68 @@ onInput("w", () => {
   if (current_level !== undefined || level != current_level) {
     clearText("");
     setMap(current_level);
-  }else if(level == current_level) {
-    
+    level = current_level;
   }
+});
+
+onInput("j", () => {
+  if(getSelectedCard() != null) {
+      putCardForAttack(getSelectedCard());
+  }else {
+      addText("NULL");
+  }
+});
+
+onInput("a", () => {
+  getFirst(player).x -= 1;
+});
+
+onInput("d", () => {
+  if(getFirst(player).x == 4) return;
+  getFirst(player).x += 1;
 });
 
 afterInput(() => {
   
 });
 
+function putCardForAttack(card) {
+  if(!isPlayerTurn()) return;
+  if(!isCardOnTile(0, 2)) {
+    card.x = 0;
+    card.y = 2;
+  }else if(!isCardOnTile(2, 2)) {
+    card.x = 2;
+    //TODO: Wait for defence from bot
+    card.y = 2;
+  }else {
+    //TODO: Wait for defence from bot
+  }
+}
+
 function getSelectedCard() {
+  let player_position = getFirst(player);
+
+  const selectedCards = getTile(player_position.x, player_position.y+1);
+  
+  return selectedCards.find(sprite => sprite != null);
+}
+
+function isPlayerTurn() {
+  return is_player_turn;
+}
+
+function isCardOnTile(x, y) {
+  const spritesOnTile = getTile(x, y);
+  
+  if(spritesOnTile.length > 0) {
+    if(spritesOnTile.find(sprite => sprite.type === card_stack)) {
+      spritesOnTile.find(sprite => sprite.type === card_stack).remove();
+      addText("removed!");
+      return false;
+    }
+    addText("yes card!");
+    return true;
+  }
+  else return false;
 }

@@ -7,14 +7,9 @@ https://sprig.hackclub.com/gallery/getting_started
 @tags: []
 @addedOn: 2024-00-00
 */
-
-let table = [
-  ["", "", "", "", "", "", ""],
-  ["", "", "", "", "", "", ""],
-  ["", "", "", "", "", "", ""],
-  ["", "", "", "", "", "", ""],
-  ["", "", "", "", "", "", ""],
-];
+let current_card_stack = []; // max 0-35
+let bot_cards = []; // max 0-11
+let player_cards = []; // max 0-11
 let is_player_turn = true;
 
 // define the sprites in our game
@@ -962,11 +957,11 @@ const levels = [
 ..WX..
 ......`,
   map`
-......T
-.......
-.....IK
-Y......
-stuvwMT`,
+.......ST
+.........
+.......IK
+..Y......
+.......MT`,
 ];
 setMap(levels[level]);
 
@@ -977,14 +972,19 @@ onInput("w", () => {
     clearText("");
     setMap(current_level);
     level = current_level;
+    startGame();
   }
 });
 
 onInput("j", () => {
-  if(getSelectedCard() != null) {
-      putCardForAttack(getSelectedCard());
-  }else {
-      addText("NULL");
+  if(isPlayerTurn()) {
+    if(getSelectedCard() != null) {
+        putCardForAttack(getSelectedCard());
+    }else {
+        addText("NULL");
+    }
+  }else { // bot needs brain
+    putCardForAttack(getRandomCardFromCards());
   }
 });
 
@@ -993,7 +993,7 @@ onInput("a", () => {
 });
 
 onInput("d", () => {
-  if(getFirst(player).x == 4) return;
+  if(getFirst(player).x == 5) return;
   getFirst(player).x += 1;
 });
 
@@ -1001,22 +1001,54 @@ afterInput(() => {
   
 });
 
+function startGame() {
+
+  const bot_cards_row = 0;
+  const player_cards_row = 4;
+
+  for(let i = 0; i < 35; i++) {
+    current_card_stack.push(getRandomCard());
+    addText(current_card_stack.length.toString());
+  }
+
+  for(let i = 0; i < 6; i++) {
+    bot_cards.push(current_card_stack[i]);
+    addSprite(i, bot_cards_row, current_card_stack[i]);
+    current_card_stack.splice(i, 1);
+  }
+  
+  for(let i = 0; i < 6; i++) {
+    player_cards.push(current_card_stack[i]);
+    addSprite(i, player_cards_row, current_card_stack[i]);
+    current_card_stack.splice(i, 1);
+  }
+}
+
+function getRandomCard() {
+  const cards = 'ABCDEFGHIJabcdefghijklmnopqrstuvwxyz';
+  const randomIndex = Math.floor(Math.random() * cards.length);
+
+  // Return the randomly selected card sprite
+  return cards[randomIndex];
+}
+
+function getRandomCardFromCards(cards) {
+  const randomIndex = Math.floor(Math.random() * cards.length);
+  return cards[randomIndex];
+}
+
 function putCardForAttack(card) {
-  if(!isPlayerTurn()) return;
-  if(!isCardOnTile(0, 2)) {
-    card.x = 0;
-    card.y = 2;
-  }else if(!isCardOnTile(2, 2)) {
-    card.x = 2;
-    //TODO: Wait for defence from bot
-    card.y = 2;
-  }else {
-    //TODO: Wait for defence from bot
+  for(let i = 0; i < 5; i+= 2) {
+    if(!isCardOnTile(i, 2)) {
+      card.x = i;
+      card.y = 2;
+      break;
+    }
   }
 }
 
 function getSelectedCard() {
-  let player_position = getFirst(player);
+  const player_position = getFirst(player);
 
   const selectedCards = getTile(player_position.x, player_position.y+1);
   

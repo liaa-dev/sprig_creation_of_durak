@@ -978,13 +978,15 @@ onInput("w", () => {
 
 onInput("j", () => {
   if(isPlayerTurn()) {
-    if(getSelectedCard() != null) {
-        putCardForAttack(getSelectedCard());
+    if(getPlayerSelectedCard() != null) {
+        const card = getPlayerSelectedCard();
+        putCardForAttack(card, player_cards);
+        putCardForDefence(getNextHighestCardFromCards(card, bot_cards, 0), bot_cards);
     }else {
         addText("NULL");
     }
   }else { // bot needs brain
-    putCardForAttack(getRandomCardFromCards());
+    //putCardForAttack(getRandomCardFromCards());
   }
 });
 
@@ -1002,7 +1004,6 @@ afterInput(() => {
 });
 
 function startGame() {
-
   const bot_cards_row = 0;
   const player_cards_row = 4;
 
@@ -1022,6 +1023,8 @@ function startGame() {
     addSprite(i, player_cards_row, current_card_stack[i]);
     current_card_stack.splice(i, 1);
   }
+
+  players_turn = true;
 }
 
 function getRandomCard() {
@@ -1032,27 +1035,54 @@ function getRandomCard() {
   return cards[randomIndex];
 }
 
-function getRandomCardFromCards(cards) {
+function getRandomCardFromCards(cards, card_row) {
   const randomIndex = Math.floor(Math.random() * cards.length);
-  return cards[randomIndex];
+  return getTile(cards[randomIndex], card_row)[0];
 }
 
-function putCardForAttack(card) {
+function putCardForAttack(card, cards) {
   for(let i = 0; i < 5; i+= 2) {
     if(!isCardOnTile(i, 2)) {
       card.x = i;
       card.y = 2;
+      cards.splice(i, 1);
       break;
     }
   }
 }
 
-function getSelectedCard() {
+function putCardForDefence(card, cards) {
+  for(let i = 1; i < 6; i+= 2) {
+    if(!isCardOnTile(i, 2)) {
+      card.x = i;
+      card.y = 2;
+      cards.splice(i, 1);
+      break;
+    }
+  }
+}
+
+function getNextHighestCardFromCards(card, cards, card_row) {
+  for(let i = 0; i < cards.length; i++) {
+        if (cards[i] > card.type) {
+          addText("yay");
+          return getTile(i, card_row)[0];
+          break;
+        }
+        if(i == cards.length) { // Couldn't find next highest card
+          addText("nooo!");
+          return getRandomCardFromCards(cards, card_row);
+          break;
+        }
+    }
+}
+
+function getPlayerSelectedCard() {
   const player_position = getFirst(player);
 
   const selectedCards = getTile(player_position.x, player_position.y+1);
   
-  return selectedCards.find(sprite => sprite != null);
+  return selectedCards.find(sprite => sprite !== null);
 }
 
 function isPlayerTurn() {
